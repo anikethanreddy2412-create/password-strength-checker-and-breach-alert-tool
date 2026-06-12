@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Password Strength & Breach Analyzer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        /* Strength Bar Styles */
+        .strength-container {
+            margin: 10px 0;
+        }
+        .strength-bar {
+            height: 8px;
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .rating-text {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        /* Buttons */
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .btn-check { background-color: #007bff; color: white; }
+        .btn-gen { background-color: #28a745; color: white; }
+        button:hover { opacity: 0.9; }
+        
+        /* Feedback boxes */
+        .feedback-box {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.4;
+        }
+        .warning-banner {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+            margin-top: 15px;
+            font-weight: bold;
+            display: none;
+        }
+        .safe-banner {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #c3e6cb;
+            margin-top: 15px;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Password Strength & Breach Shield</h2>
+    
+    <div class="input-group">
+        <input type="text" id="passwordInput" placeholder="Type a password..." autocomplete="off">
+    </div>
+    
+    <div class="strength-container">
+        <div id="strengthBar" class="strength-bar"></div>
+        <div id="ratingText" class="rating-text">Enter a password</div>
+    </div>
+
+    <div>
+        <button class="btn-check" onclick="verifyBreach()">Check Data Breaches</button>
+        <button class="btn-gen" onclick="generateStrongPassword()">⚡ Generate Strong</button>
+    </div>
+
+    <div id="feedback" class="feedback-box"></div>
+    
+    <div id="warningBanner" class="warning-banner"></div>
+    <div id="safeBanner" class="safe-banner"></div>
+</div>
+
+<script>
+    const passwordInput = document.getElementById('passwordInput');
+    const strengthBar = document.getElementById('strengthBar');
+    const ratingText = document.getElementById('ratingText');
+    const feedback = document.getElementById('feedback');
+    const warningBanner = document.getElementById('warningBanner');
+    const safeBanner = document.getElementById('safeBanner');
+
+    let currentRating = "Weak";
+
+    passwordInput.addEventListener('input', () => {
+        evaluatePassword(passwordInput.value);
+    });
+
+    function evaluatePassword(pwd) {
+        // Reset warnings when they alter the text
+        warningBanner.style.display = 'none';
+        safeBanner.style.display = 'none';
+
+        if (!pwd) {
+            strengthBar.style.width = '0%';
+            ratingText.innerText = "Enter a password";
+            feedback.innerHTML = "";
+            return;
+        }
+
+        let score = 0;
+        let tips = [];
+
+        // Criteria checks
+        if (pwd.length >= 8) score++; else tips.push("Make it at least 8 characters long.");
+        if (pwd.length >= 12) score++; // Bonus point for extra length
+        if (/[A-Z]/.test(pwd)) score++; else tips.push("Add uppercase letters.");
+        if (/[0-9]/.test(pwd)) score++; else tips.push("Include at least one number.");
+        if (/[^A-Za-z0-9]/.test(pwd)) score++; else tips.push("Add a special character (e.g., !, @, #).");
+
+        // UI Updates based on score
+        if (score <= 2) {
+            currentRating = "Weak";
+            strengthBar.style.width = '33%';
+            strengthBar.style.backgroundColor = '#dc3545'; // Red
+            ratingText.style.color = '#dc3545';
+        } else if (score <= 4) {
+            currentRating = "Moderate";
+            strengthBar.style.width = '66%';
+            strengthBar.style.backgroundColor = '#ffc107'; // Yellow
+            ratingText.style.color = '#b58100';
+        } else {
+            currentRating = "Strong";
+            strengthBar.style.width = '100%';
+            strengthBar.style.backgroundColor = '#28a745'; // Green
+            ratingText.style.color = '#28a745';
+        }
+
+        ratingText.innerText = `Rating: ${currentRating}`;
+        feedback.innerHTML = tips.length > 0 ? `<strong>Why it's improving:</strong><br>• ${tips.join('<br>• ')}` : "Excellent structure! This meets ideal strength criteria.";
+    }
+
+    async function verifyBreach() {
+        const pwd = passwordInput.value;
+        if (!pwd) return alert("Please type a password first.");
+
+        warningBanner.style.display = 'none';
+        safeBanner.style.display = 'none';
+
+        const response = await fetch('/check-breach', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd, score: currentRating })
+        });
+        
+        const data = await response.json();
+
+        if (data.is_breached) {
+            warningBanner.innerText = `⚠️ WARNING: This password was found in ${data.breach_count.toLocaleString()} data breaches! Never use this password.`;
+            warningBanner.style.display = 'block';
+        } else {
+            safeBanner.innerText = "✅ Clear! This password has not been detected in any known public data leaks.";
+            safeBanner.style.display = 'block';
+        }
+    }
+
+    // ⭐ Bonus Challenge: Password Generator
+    function generateStrongPassword() {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+        let generated = "";
+        // Force criteria satisfaction by pulling at least one of each initially
+        generated += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+        generated += "0123456789"[Math.floor(Math.random() * 10)];
+        generated += "!@#$%^&*()"[Math.floor(Math.random() * 10)];
+        
+        for (let i = 0; i < 11; i++) {
+            generated += chars[Math.floor(Math.random() * chars.length)];
+        }
+        
+        // Shuffle the string randomly
+        generated = generated.split('').sort(() => 0.5 - Math.random()).join('');
+        
+        passwordInput.value = generated;
+        evaluatePassword(generated);
+    }
+</script>
+</body>
+</html>
